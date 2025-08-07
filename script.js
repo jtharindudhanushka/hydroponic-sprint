@@ -92,7 +92,6 @@ setPersistence(auth, browserLocalPersistence)
             loginSection.classList.add('hidden');
             mainContent.classList.remove('hidden');
 
-            // Check if user has a display name
             const nameRef = ref(db, `users/${userId}/displayName`);
             const nameSnapshot = await get(nameRef);
             if (nameSnapshot.exists()) {

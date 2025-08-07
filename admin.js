@@ -85,7 +85,7 @@ function renderUserList() {
             const userContainer = document.createElement('div');
             userContainer.classList.add('user-container');
 
-            const userName = userData.displayName || userData.email || `User ${userId.substring(0, 5)}`;
+            const userName = userData.displayName || `User ${userId.substring(0, 5)}`;
             const userHeader = document.createElement('h4');
             userHeader.textContent = userName;
             userHeader.classList.add('user-header');
@@ -124,7 +124,7 @@ function renderUserList() {
 
 function displayUserDetails(userId, attemptId) {
     const attemptData = allUsersData[userId].attempts[attemptId];
-    const userName = allUsersData[userId].displayName || allUsersData[userId].email || `User ${userId.substring(0, 5)}`;
+    const userName = allUsersData[userId].displayName || `User ${userId.substring(0, 5)}`;
     const attemptDate = new Date(attemptData.createdAt).toLocaleString();
     
     detailsUsername.textContent = `Details for ${userName} (Attempt: ${attemptDate})`;
