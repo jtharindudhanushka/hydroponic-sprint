@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hydroponics AI Challenge</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+    <div id="app-container">
+        <!-- Login Section -->
+        <div id="login-section" class="card">
+            <h1 class="title">Hydroponics AI Challenge</h1>
+            <p class="subtitle">Enter your credentials to manage your farm.</p>
+            <div class="input-group">
+                <input type="email" id="email-input" placeholder="Username (Email)">
+            </div>
+            <div class="input-group">
+                <input type="password" id="password-input" placeholder="Password">
+            </div>
+            <button id="login-btn" class="btn btn-primary">Login</button>
+            <p id="login-error" class="error-message"></p>
+        </div>
+
+        <!-- Main Content -->
+        <div id="main-content" class="hidden">
+            <header class="main-header">
+                 <h1 class="welcome-message">Welcome, <span id="user-name"></span>!</h1>
+                 <button id="logout-btn" class="btn btn-secondary">Logout</button>
+            </header>
+
+            <!-- Attempts Section -->
+            <div id="attempts-section" class="card hidden">
+                <h2 class="card-title">Your Attempts</h2>
+                <p class="card-text">Each time you start the challenge, your progress is saved as an attempt. You can review past attempts or start a new one.</p>
+                <div id="attempts-list">
+                    <!-- List of previous attempts will be populated here -->
+                </div>
+                <button id="new-attempt-btn" class="btn btn-primary">Start New Attempt</button>
+            </div>
+
+
+            <!-- Guide Section -->
+            <div id="guide-section" class="card hidden">
+                <h2 class="card-title">Your Mission Briefing</h2>
+                <p class="card-text">This is a 15-day challenge. Your goal is to maximize crop yield while keeping total costs under $50. You must also log your observations daily. Review the full guide for details.</p>
+                <button id="start-sim-btn" class="btn btn-primary">I'm Ready, Start Simulation</button>
+            </div>
+
+            <!-- Simulation Section -->
+            <div id="simulation-section" class="hidden">
+                <div class="card">
+                    <h2 class="card-title">Day <span id="sim-day">1</span> / 15</h2>
+
+                    <!-- Dashboard -->
+                    <div class="dashboard">
+                        <div class="metric-card">
+                            <p class="metric-label">Total Yield (kg)</p>
+                            <p id="yield-display" class="metric-value">0.00</p>
+                        </div>
+                        <div class="metric-card">
+                            <p class="metric-label">Total Cost ($)</p>
+                            <p id="cost-display" class="metric-value">0.00</p>
+                        </div>
+                        <div class="metric-card">
+                            <p class="metric-label">Current pH</p>
+                            <p id="ph-display" class="metric-value">6.0</p>
+                        </div>
+                        <div class="metric-card">
+                            <p class="metric-label">Nutrients (PPM)</p>
+                            <p id="nutrients-display" class="metric-value">800</p>
+                        </div>
+                    </div>
+
+                    <!-- Budget Tracker -->
+                    <div class="budget-tracker">
+                        <p>Spent: <strong id="spent-budget-display">$0.00</strong></p>
+                        <p>Remaining: <strong id="remaining-budget-display">$50.00</strong></p>
+                    </div>
+
+                    <!-- Chart -->
+                    <div class="chart-container">
+                        <canvas id="performance-chart"></canvas>
+                    </div>
+
+                    <!-- Event Log -->
+                    <div id="event-log" class="event-log hidden"></div>
+
+                    <!-- Hint Box -->
+                    <div id="hint-box" class="hint-box">
+                        <p><strong>Hint:</strong> <span id="hint-text"></span></p>
+                    </div>
+
+                    <!-- Controls -->
+                    <div class="controls-grid">
+                        <div class="control-group">
+                            <label for="light-hours">Light Hours</label>
+                            <input type="range" id="light-hours" min="8" max="18" value="12">
+                            <span id="light-hours-value">12 hrs</span>
+                        </div>
+                        <div class="control-group">
+                            <label for="nutrient-ppm">Nutrient PPM</label>
+                            <input type="range" id="nutrient-ppm" min="400" max="1200" step="50" value="800">
+                             <span id="nutrient-ppm-value">800 PPM</span>
+                        </div>
+                        <div class="control-group">
+                            <label for="ph-adjust">pH Adjustment</label>
+                            <input type="range" id="ph-adjust" min="-1" max="1" step="0.1" value="0">
+                            <span id="ph-adjust-value">0.0</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Observation Log -->
+                    <div class="observation-group">
+                        <label for="observation-input">Today's Observations (Required)</label>
+                        <textarea id="observation-input" rows="3" placeholder="What is your strategy for today? What did you notice?"></textarea>
+                    </div>
+                    
+                    <!-- Live Daily Cost Preview -->
+                    <div class="daily-cost-preview">
+                        <p>Projected Cost for Today: <strong id="daily-cost-display">$0.00</strong></p>
+                    </div>
+
+
+                    <button id="next-day-btn" class="btn btn-primary">Submit for Today</button>
+                    <button id="back-to-attempts-btn" class="btn btn-secondary">Back to Attempts</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Warning Modal -->
+    <div id="warning-modal" class="modal-overlay hidden">
+        <div class="modal-content card">
+            <h2 id="warning-title" class="card-title"></h2>
+            <p id="warning-message" class="card-text"></p>
+            <div class="modal-buttons">
+                <button id="redo-day-btn" class="btn btn-primary">Redo Day</button>
+                <button id="restart-from-warning-btn" class="btn btn-secondary">Start New Attempt</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Over Modal -->
+    <div id="game-over-modal" class="modal-overlay hidden">
+        <div class="modal-content card">
+            <h2 id="modal-title" class="card-title"></h2>
+            <p id="modal-message" class="card-text"></p>
+            <div class="final-stats">
+                <p>Final Yield: <strong id="final-yield"></strong> kg</p>
+                <p>Final Cost: $<strong id="final-cost"></strong></p>
+            </div>
+            
+            <!-- Performance Summary Section -->
+            <div id="performance-summary" class="performance-summary">
+                <h3 class="summary-title">Performance Report</h3>
+                <div class="summary-item">
+                    <span>AI Thinking (Optimization Score):</span>
+                    <strong id="summary-optimization"></strong>
+                </div>
+                <div class="summary-item">
+                    <span>Adaptability Score:</span>
+                    <strong id="summary-adaptability"></strong>
+                </div>
+                <div class="summary-item">
+                    <span>Diligence Score:</span>
+                    <strong id="summary-diligence"></strong>
+                </div>
+            </div>
+
+            <!-- Improvement Suggestions -->
+            <div id="improvement-suggestions" class="performance-summary">
+                <h3 class="summary-title">Improvement Suggestions</h3>
+                <ul id="suggestions-list">
+                    <!-- Suggestions will be added by JS -->
+                </ul>
+            </div>
+
+            <button id="restart-btn" class="btn btn-primary">Back to Attempts</button>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="script.js" type="module"></script>
+</body>
+</html>
