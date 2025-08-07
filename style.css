@@ -355,13 +355,17 @@ body {
     background-color: rgba(0,0,0,0.6);
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: flex-start; /* Changed from center to flex-start */
     z-index: 1000;
+    padding: 2rem 1rem; /* Add more top padding */
+    box-sizing: border-box;
+    overflow-y: auto; /* Enable scrolling on the overlay itself */
 }
 
 .modal-content {
     width: 90%;
     max-width: 500px;
+    margin-bottom: 2rem; /* Add margin to the bottom */
 }
 
 .final-stats {

@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
+import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -34,35 +34,25 @@ const detailsContent = document.getElementById('details-content');
 
 let allUsersData = {};
 
-// --- Authentication & Role Check ---
+// --- Authentication ---
 onAuthStateChanged(auth, (user) => {
     if (user) {
-        // User is signed in, NOW VERIFY THEIR ROLE
         const userRoleRef = ref(db, 'users/' + user.uid + '/role');
         onValue(userRoleRef, (snapshot) => {
-            const role = snapshot.val();
-            if (role === 'admin') {
-                // SUCCESS: User is an admin, show the dashboard
+            if (snapshot.val() === 'admin') {
                 adminLoginSection.classList.add('hidden');
                 adminMainContent.classList.remove('hidden');
                 loadAllUsersData();
             } else {
-                // FAILURE: User is not an admin, deny access
                 adminLoginError.textContent = "Access Denied. Admin privileges required.";
-                signOut(auth); // Log them out immediately
+                signOut(auth);
             }
-        }, {
-            // Use onlyOnce to prevent this from running multiple times
-            onlyOnce: true 
-        });
-
+        }, { onlyOnce: true });
     } else {
-        // Admin is signed out
         adminLoginSection.classList.remove('hidden');
         adminMainContent.classList.add('hidden');
     }
 });
-
 
 adminLoginBtn.addEventListener('click', () => {
     const email = adminEmailInput.value;
@@ -86,58 +76,73 @@ function loadAllUsersData() {
 function renderUserList() {
     userList.innerHTML = '';
     if (!allUsersData) {
-        userList.innerHTML = '<li>No user data found.</li>';
+        userList.innerHTML = '<p>No user data found.</p>';
         return;
     }
 
-    Object.keys(allUsersData).forEach(userId => {
-        const user = allUsersData[userId];
-        if (user.gameState) {
-            const listItem = document.createElement('li');
-            const userName = user.gameState.userName || `User ${userId.substring(0, 5)}`;
-            const statusDot = document.createElement('span');
-            statusDot.classList.add('status-dot');
-            statusDot.classList.toggle('active', !user.gameState.gameOver);
-            statusDot.classList.toggle('game-over', user.gameState.gameOver);
+    Object.entries(allUsersData).forEach(([userId, userData]) => {
+        if (userData.attempts) {
+            const userContainer = document.createElement('div');
+            userContainer.classList.add('user-container');
+
+            const userName = userData.email || `User ${userId.substring(0, 5)}`;
+            const userHeader = document.createElement('h4');
+            userHeader.textContent = userName;
+            userHeader.classList.add('user-header');
+            userContainer.appendChild(userHeader);
+
+            const attemptsSubList = document.createElement('ul');
+            attemptsSubList.classList.add('attempts-sublist');
             
-            const nameSpan = document.createElement('span');
-            nameSpan.textContent = userName;
-            
-            listItem.appendChild(nameSpan);
-            listItem.appendChild(statusDot);
-            
-            listItem.dataset.userId = userId;
-            listItem.addEventListener('click', () => {
-                document.querySelectorAll('#user-list li').forEach(li => li.classList.remove('active'));
-                listItem.classList.add('active');
-                displayUserDetails(userId);
+            Object.entries(userData.attempts).forEach(([attemptId, attemptData]) => {
+                const attemptItem = document.createElement('li');
+                attemptItem.classList.add('attempt-item-admin');
+                
+                const date = new Date(attemptData.createdAt).toLocaleDateString();
+                let status = 'In Progress';
+                if (attemptData.gameState.gameOver) {
+                    status = attemptData.gameState.gameOverReason.includes('Complete') ? 'Complete' : 'Failed';
+                }
+                
+                attemptItem.textContent = `Attempt on ${date} - ${status}`;
+                attemptItem.dataset.userId = userId;
+                attemptItem.dataset.attemptId = attemptId;
+
+                attemptItem.addEventListener('click', (e) => {
+                    document.querySelectorAll('.attempt-item-admin').forEach(item => item.classList.remove('active'));
+                    e.currentTarget.classList.add('active');
+                    displayUserDetails(userId, attemptId);
+                });
+                attemptsSubList.appendChild(attemptItem);
             });
-            userList.appendChild(listItem);
+            
+            userContainer.appendChild(attemptsSubList);
+            userList.appendChild(userContainer);
         }
     });
 }
 
-function displayUserDetails(userId) {
-    const user = allUsersData[userId];
-    const userName = user.gameState.userName || `User ${userId.substring(0, 5)}`;
-    detailsUsername.textContent = `Details for ${userName}`;
+function displayUserDetails(userId, attemptId) {
+    const attemptData = allUsersData[userId].attempts[attemptId];
+    const userName = allUsersData[userId].email || `User ${userId.substring(0, 5)}`;
+    const attemptDate = new Date(attemptData.createdAt).toLocaleString();
+    
+    detailsUsername.textContent = `Details for ${userName} (Attempt: ${attemptDate})`;
     detailsContent.innerHTML = '';
 
     const summary = document.createElement('div');
     summary.classList.add('history-item');
     summary.innerHTML = `
-        <h4>Current Status (Day ${user.gameState.day})</h4>
-        <p><strong>Yield:</strong> ${user.gameState.yield.toFixed(2)} kg</p>
-        <p><strong>Cost:</strong> $${user.gameState.cost.toFixed(2)}</p>
-        <p><strong>pH:</strong> ${user.gameState.ph.toFixed(1)}</p>
-        <p><strong>Nutrients:</strong> ${Math.round(user.gameState.nutrients)} PPM</p>
-        ${user.gameState.gameOver ? `<p><strong>Status:</strong> <span style="color: #ef4444;">Game Over - ${user.gameState.gameOverReason}</span></p>` : ''}
+        <h4>Final Status (Day ${attemptData.gameState.day})</h4>
+        <p><strong>Yield:</strong> ${attemptData.gameState.yield.toFixed(2)} kg</p>
+        <p><strong>Cost:</strong> $${attemptData.gameState.cost.toFixed(2)}</p>
+        <p><strong>Final pH:</strong> ${attemptData.gameState.ph.toFixed(1)}</p>
+        ${attemptData.gameState.gameOver ? `<p><strong>Status:</strong> <span class="status-text-${attemptData.gameState.gameOverReason.includes('Complete') ? 'complete' : 'failed'}">${attemptData.gameState.gameOverReason}</span></p>` : ''}
     `;
     detailsContent.appendChild(summary);
 
-    if (user.history) {
-        const sortedHistory = Object.values(user.history).sort((a, b) => a.day - b.day);
-        sortedHistory.forEach(entry => {
+    if (attemptData.history) {
+        Object.values(attemptData.history).forEach(entry => {
             const historyItem = document.createElement('div');
             historyItem.classList.add('history-item');
             historyItem.innerHTML = `
@@ -150,22 +155,8 @@ function displayUserDetails(userId) {
             detailsContent.appendChild(historyItem);
         });
     } else {
-        detailsContent.innerHTML += '<p>No history recorded for this user yet.</p>';
+        detailsContent.innerHTML += '<p>No history recorded for this attempt yet.</p>';
     }
 
     userDetailsContainer.classList.remove('hidden');
 }
-
-// Add user's email to their game state upon first login for display purposes
-onAuthStateChanged(auth, (user) => {
-    if(user && user.email) {
-        // This check is primarily for the main app, but doesn't hurt here.
-        // It ensures the username is set in the gameState for the admin to see.
-        const userStateRef = ref(db, `users/${user.uid}/gameState/userName`);
-        onValue(userStateRef, (snapshot) => {
-            if(!snapshot.exists()) {
-                set(userStateRef, user.email);
-            }
-        }, { onlyOnce: true });
-    }
-});
