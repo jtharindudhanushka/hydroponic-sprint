@@ -28,12 +28,15 @@ let userId = null;
 let currentAttemptId = null;
 let gameStateRef = null;
 let gameHistoryRef = null;
-let gameStateListener = null; // To hold the listener function
+let gameStateListener = null;
 let chart = null;
 
 // UI Elements
 const loginSection = document.getElementById('login-section');
 const mainContent = document.getElementById('main-content');
+const nameEntrySection = document.getElementById('name-entry-section');
+const nameInput = document.getElementById('name-input');
+const saveNameBtn = document.getElementById('save-name-btn');
 const attemptsSection = document.getElementById('attempts-section');
 const attemptsList = document.getElementById('attempts-list');
 const newAttemptBtn = document.getElementById('new-attempt-btn');
@@ -61,15 +64,6 @@ const spentBudgetDisplay = document.getElementById('spent-budget-display');
 const remainingBudgetDisplay = document.getElementById('remaining-budget-display');
 const hintText = document.getElementById('hint-text');
 
-// Controls & Observations
-const lightHoursInput = document.getElementById('light-hours');
-const nutrientPpmInput = document.getElementById('nutrient-ppm');
-const phAdjustInput = document.getElementById('ph-adjust');
-const lightHoursValue = document.getElementById('light-hours-value');
-const nutrientPpmValue = document.getElementById('nutrient-ppm-value');
-const phAdjustValue = document.getElementById('ph-adjust-value');
-const observationInput = document.getElementById('observation-input');
-
 // Modals
 const gameOverModal = document.getElementById('game-over-modal');
 const modalTitle = document.getElementById('modal-title');
@@ -92,13 +86,22 @@ const restartFromWarningBtn = document.getElementById('restart-from-warning-btn'
 // --- Authentication ---
 setPersistence(auth, browserLocalPersistence)
   .then(() => {
-    onAuthStateChanged(auth, (user) => {
+    onAuthStateChanged(auth, async (user) => {
         if (user) {
             userId = user.uid;
-            userNameDisplay.textContent = user.email;
             loginSection.classList.add('hidden');
             mainContent.classList.remove('hidden');
-            showScreen('attempts');
+
+            // Check if user has a display name
+            const nameRef = ref(db, `users/${userId}/displayName`);
+            const nameSnapshot = await get(nameRef);
+            if (nameSnapshot.exists()) {
+                userNameDisplay.textContent = nameSnapshot.val();
+                showScreen('attempts');
+            } else {
+                userNameDisplay.textContent = user.email;
+                showScreen('nameEntry');
+            }
         } else {
             userId = null;
             currentAttemptId = null;
@@ -123,17 +126,31 @@ loginBtn.addEventListener('click', () => {
 
 logoutBtn.addEventListener('click', () => signOut(auth));
 
+saveNameBtn.addEventListener('click', () => {
+    const name = nameInput.value.trim();
+    if (name) {
+        const nameRef = ref(db, `users/${userId}/displayName`);
+        set(nameRef, name).then(() => {
+            userNameDisplay.textContent = name;
+            showScreen('attempts');
+        });
+    } else {
+        alert("Please enter a name.");
+    }
+});
+
 // --- Screen Management ---
 function showScreen(screenName) {
-    // Hide all screens first
+    nameEntrySection.classList.add('hidden');
     attemptsSection.classList.add('hidden');
     guideSection.classList.add('hidden');
     simulationSection.classList.add('hidden');
     gameOverModal.classList.add('hidden');
     warningModal.classList.add('hidden');
 
-    // Show the requested screen
-    if (screenName === 'attempts') {
+    if (screenName === 'nameEntry') {
+        nameEntrySection.classList.remove('hidden');
+    } else if (screenName === 'attempts') {
         attemptsSection.classList.remove('hidden');
         loadAndDisplayAttempts();
     } else if (screenName === 'guide') {
@@ -252,6 +269,8 @@ function recordHistory(inputs, observation) {
 }
 
 function updateUI() {
+    if (!gameState) return;
+
     if (gameState.gameOver) {
         get(gameHistoryRef).then(snapshot => {
             const history = snapshot.val() ? Object.values(snapshot.val()) : [];
@@ -382,7 +401,7 @@ restartFromWarningBtn.addEventListener('click', () => {
 
 
 function showGameOverModal(yieldVal, costVal, reason, history) {
-    showScreen('gameOver'); // Hide other screens
+    showScreen('gameOver'); 
     modalTitle.textContent = reason.includes("Complete") ? "Congratulations!" : "Game Over";
     
     let detailedMessage = reason;
@@ -505,28 +524,27 @@ function updateDailyCostPreview() {
 
 
 // --- Charting ---
-function loadHistoryAndRenderChart() {
+async function loadHistoryAndRenderChart() {
     if (!gameHistoryRef) return;
-    onValue(gameHistoryRef, (snapshot) => {
-        const historyData = snapshot.val();
-        const labels = [0];
-        const yieldData = [0];
-        const costData = [0];
-        const phData = [6.0];
-        const nutrientData = [800];
+    const snapshot = await get(gameHistoryRef);
+    const historyData = snapshot.val();
+    const labels = [0];
+    const yieldData = [0];
+    const costData = [0];
+    const phData = [6.0];
+    const nutrientData = [800];
 
-        if (historyData) {
-            const sortedHistory = Object.values(historyData).sort((a, b) => a.day - b.day);
-            sortedHistory.forEach(entry => {
-                labels.push(entry.day);
-                yieldData.push(entry.stateAfter.yield);
-                costData.push(entry.stateAfter.cost);
-                phData.push(entry.stateAfter.ph);
-                nutrientData.push(entry.stateAfter.nutrients);
-            });
-        }
-        renderChart(labels, yieldData, costData, phData, nutrientData);
-    });
+    if (historyData) {
+        const sortedHistory = Object.values(historyData).sort((a, b) => a.day - b.day);
+        sortedHistory.forEach(entry => {
+            labels.push(entry.day);
+            yieldData.push(entry.stateAfter.yield);
+            costData.push(entry.stateAfter.cost);
+            phData.push(entry.stateAfter.ph);
+            nutrientData.push(entry.stateAfter.nutrients);
+        });
+    }
+    renderChart(labels, yieldData, costData, phData, nutrientData);
 }
 
 function renderChart(labels, yieldData, costData, phData, nutrientData) {
