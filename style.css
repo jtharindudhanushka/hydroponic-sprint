@@ -357,11 +357,15 @@ body {
     justify-content: center;
     align-items: center;
     z-index: 1000;
+    padding: 1rem; /* Add padding for smaller screens */
+    box-sizing: border-box;
 }
 
 .modal-content {
     width: 90%;
     max-width: 500px;
+    max-height: 90vh; /* Set a max height */
+    overflow-y: auto; /* Enable vertical scrolling */
 }
 
 .final-stats {
