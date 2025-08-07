@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Hydroponics Challenge</title>
+    <link rel="stylesheet" href="admin.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="admin-app">
+        <!-- Admin Login -->
+        <div id="admin-login-section" class="card">
+            <h1 class="title">Admin Dashboard</h1>
+            <div class="input-group">
+                <input type="email" id="admin-email" placeholder="Admin Email">
+            </div>
+            <div class="input-group">
+                <input type="password" id="admin-password" placeholder="Admin Password">
+            </div>
+            <button id="admin-login-btn" class="btn btn-primary">Login</button>
+            <p id="admin-login-error" class="error-message"></p>
+        </div>
+
+        <!-- Admin Content -->
+        <div id="admin-main-content" class="hidden">
+            <header class="main-header">
+                <h1 class="title">Participant Overview</h1>
+                <button id="admin-logout-btn" class="btn btn-secondary">Logout</button>
+            </header>
+
+            <div class="content-wrapper">
+                <div id="user-list-container" class="card">
+                    <h2 class="card-title">Participants</h2>
+                    <div id="user-list">
+                        <!-- User list will be populated by JS -->
+                    </div>
+                </div>
+
+                <div id="user-details-container" class="card hidden">
+                    <h2 id="details-username" class="card-title">Select an attempt to see details</h2>
+                    <div id="details-content">
+                        <!-- User details and history will be populated here -->
+                    </div>
+                </div>
+                 <div id="evaluation-guide-container" class="card">
+                    <h2 class="card-title">Evaluation Guide</h2>
+                    <div class="guide-content">
+                        <h4>AI Thinking (Logic & Optimization)</h4>
+                        <p>Review the daily history. Do their inputs show a clear strategy? Look at their observations: do they mention a hypothesis? (e.g., "pH is dropping, so I'm reducing nutrient input today"). This shows they understand cause and effect.</p>
+                        
+                        <h4>Out-of-the-Box Thinking & Creativity</h4>
+                        <p>How do their observations and actions change after a random negative event? Do they articulate a creative recovery plan? (e.g., "Pest attack hit hard. I'm cutting light costs to save budget and slightly increasing pH to improve nutrient uptake.")</p>
+
+                        <h4>Researching Ability</h4>
+                        <p>Do their observations mention external concepts? (e.g., "Read that lettuce prefers a pH closer to 5.8, so I'm aiming for that."). This demonstrates an ability to seek and apply new knowledge to the problem.</p>
+
+                        <h4>Diligence & Communication</h4>
+                        <p>Are their observations clear, concise, and submitted every day? This reflects their diligence and ability to communicate their thought process—a critical skill in any technical team.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="admin.js" type="module"></script>
+</body>
+</html>
